@@ -48,6 +48,7 @@ type RenderCache = {
     renderCount: number;
     renderStartTime: number;
     snapshots: Map<string, RefSnapshot>;
+    pendingSnapshots: Map<string, RefSnapshot>;
     currentResults: RefResult[];
     pendingRecord: RenderRecord | null;
 };

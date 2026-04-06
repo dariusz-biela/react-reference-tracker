@@ -10,6 +10,7 @@ function makeEmptyCache(): RenderCache {
         renderCount: 0,
         renderStartTime: 0,
         snapshots: new Map(),
+        pendingSnapshots: new Map(),
         currentResults: [],
         pendingRecord: null,
     };
@@ -26,11 +27,16 @@ function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
             return;
         }
         cache.current.pendingRecord = null;
+        for (const [key, value] of cache.current.pendingSnapshots) {
+            cache.current.snapshots.set(key, value);
+        }
+        cache.current.pendingSnapshots = new Map();
         addRender(id, pending, name);
     });
 
     function startRender() {
         cache.current.currentResults = [];
+        cache.current.pendingSnapshots = new Map();
         cache.current.renderStartTime = performance.now();
         cache.current.renderCount += 1;
     }
@@ -39,7 +45,7 @@ function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
         const snapshot = cache.current.snapshots.get(refName);
         const result = analyzeRef(snapshot, value, refName, maxDepth);
         cache.current.currentResults.push(result);
-        cache.current.snapshots.set(refName, {raw: value, clone: deepClone(value)});
+        cache.current.pendingSnapshots.set(refName, {raw: value, clone: deepClone(value)});
     }
 
     function endRender() {
