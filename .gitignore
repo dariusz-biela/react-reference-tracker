@@ -3,3 +3,4 @@ dist/
 .idea/
 *.tgz
 .DS_Store
+test-app/
