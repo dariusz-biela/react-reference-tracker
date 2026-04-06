@@ -1,0 +1,58 @@
+import {useContext, useEffect, useId, useRef} from 'react';
+import {ReferenceTrackerActionsContext} from './ReferenceTrackerContext';
+import type {RenderCache} from './types';
+import {analyzeRef, deepClone} from './utils';
+
+const DEFAULT_MAX_DEPTH = Infinity;
+
+function makeEmptyCache(): RenderCache {
+    return {
+        renderCount: 0,
+        renderStartTime: 0,
+        snapshots: new Map(),
+        currentResults: [],
+        pendingRecord: null,
+    };
+}
+
+function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
+    const id = useId();
+    const cache = useRef<RenderCache>(makeEmptyCache());
+    const {addRender} = useContext(ReferenceTrackerActionsContext);
+
+    useEffect(() => {
+        const pending = cache.current.pendingRecord;
+        if (pending === null) {
+            return;
+        }
+        cache.current.pendingRecord = null;
+        addRender(id, pending, name);
+    });
+
+    function startRender() {
+        cache.current.currentResults = [];
+        cache.current.renderStartTime = performance.now();
+        cache.current.renderCount += 1;
+    }
+
+    function listenForChanges(value: unknown, refName: string) {
+        const snapshot = cache.current.snapshots.get(refName);
+        const result = analyzeRef(snapshot, value, refName, maxDepth);
+        cache.current.currentResults.push(result);
+        cache.current.snapshots.set(refName, {raw: value, clone: deepClone(value)});
+    }
+
+    function endRender() {
+        const duration = performance.now() - cache.current.renderStartTime;
+        cache.current.pendingRecord = {
+            renderId: cache.current.renderCount,
+            startTime: cache.current.renderStartTime,
+            duration,
+            refs: [...cache.current.currentResults],
+        };
+    }
+
+    return {startRender, endRender, listenForChanges};
+}
+
+export default useReferenceTracker;
