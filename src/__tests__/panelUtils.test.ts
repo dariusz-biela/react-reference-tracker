@@ -476,7 +476,9 @@ describe('buildRenderStatsText', () => {
     });
 
     it('shows correct format with large counts', () => {
-        expect(buildRenderStatsText('mixed', {goodCount: 100, badCount: 50, noChangeCount: 0})).toBe('\u2713 100  \u2717 50');
+        expect(buildRenderStatsText('mixed', {goodCount: 100, badCount: 50, noChangeCount: 0})).toBe(
+            '\u2713 100  \u2717 50',
+        );
     });
 
     it('shows single good count correctly', () => {
@@ -498,20 +500,12 @@ describe('buildComponentStats', () => {
     });
 
     it('counts a render with only good refs as good', () => {
-        const renders = [
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
-            ]),
-        ];
+        const renders = [makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE})])];
         expect(buildComponentStats(renders)).toEqual({good: 1, mixed: 0, bad: 0, empty: 0});
     });
 
     it('counts a render with only bad refs as bad', () => {
-        const renders = [
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.MUTATION}),
-            ]),
-        ];
+        const renders = [makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.MUTATION})])];
         expect(buildComponentStats(renders)).toEqual({good: 0, mixed: 0, bad: 1, empty: 0});
     });
 
@@ -536,11 +530,7 @@ describe('buildComponentStats', () => {
     });
 
     it('counts a render with only initial refs as neutral (not counted in any category)', () => {
-        const renders = [
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.INITIAL}),
-            ]),
-        ];
+        const renders = [makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.INITIAL})])];
         // neutral renders are not counted in good/mixed/bad/empty
         expect(buildComponentStats(renders)).toEqual({good: 0, mixed: 0, bad: 0, empty: 0});
     });
@@ -548,27 +538,27 @@ describe('buildComponentStats', () => {
     it('correctly categorizes a mix of different render types', () => {
         const renders = [
             // good render
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
-            ], 1),
+            makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE})], 1),
             // bad render
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_NO_VALUE}),
-            ], 2),
+            makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_NO_VALUE})], 2),
             // mixed render
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
-                makeResult({classification: RENDER_CLASSIFICATION.MUTATION}),
-            ], 3),
+            makeRenderRecord(
+                [
+                    makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
+                    makeResult({classification: RENDER_CLASSIFICATION.MUTATION}),
+                ],
+                3,
+            ),
             // empty render
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NO_CHANGE}),
-            ], 4),
+            makeRenderRecord([makeResult({classification: RENDER_CLASSIFICATION.NO_CHANGE})], 4),
             // another good render
-            makeRenderRecord([
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
-                makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
-            ], 5),
+            makeRenderRecord(
+                [
+                    makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
+                    makeResult({classification: RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE}),
+                ],
+                5,
+            ),
         ];
         expect(buildComponentStats(renders)).toEqual({good: 2, mixed: 1, bad: 1, empty: 1});
     });

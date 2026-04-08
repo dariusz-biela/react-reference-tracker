@@ -212,7 +212,7 @@ function getUnnecessaryRefChanges(refChanges: string[], valueChanges: string[]):
 function classifyRender(
     refSame: boolean,
     valueChangedPaths: string[],
-    unnecessaryRefChanges: string[],
+    _unnecessaryRefChanges: string[],
 ): RenderClassification {
     if (refSame && valueChangedPaths.length === 0) {
         return RENDER_CLASSIFICATION.NO_CHANGE;

@@ -15,7 +15,11 @@ function makeRenderRecord(renderId: number, refs: RenderRecord['refs'] = []): Re
     return {renderId, startTime: 0, duration: 1.234, refs};
 }
 
-function makeRef(name: string, classification: string, overrides: Partial<RenderRecord['refs'][0]> = {}): RenderRecord['refs'][0] {
+function makeRef(
+    name: string,
+    classification: string,
+    overrides: Partial<RenderRecord['refs'][0]> = {},
+): RenderRecord['refs'][0] {
     return {
         name,
         classification: classification as RenderRecord['refs'][0]['classification'],
@@ -26,7 +30,17 @@ function makeRef(name: string, classification: string, overrides: Partial<Render
     };
 }
 
-function AddDataButton({componentId, renderId, name, refs}: {componentId: string; renderId: number; name?: string; refs?: RenderRecord['refs']}) {
+function AddDataButton({
+    componentId,
+    renderId,
+    name,
+    refs,
+}: {
+    componentId: string;
+    renderId: number;
+    name?: string;
+    refs?: RenderRecord['refs'];
+}) {
     const {addRender} = useContext(ReferenceTrackerActionsContext);
     return (
         <button
@@ -329,10 +343,12 @@ describe('ReferenceTrackerPanel', () => {
                         componentId="c-1"
                         renderId={1}
                         name="Comp"
-                        refs={[makeRef('prop', RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE, {
-                            refChangedPaths: ['prop'],
-                            valueChangedPaths: ['prop'],
-                        })]}
+                        refs={[
+                            makeRef('prop', RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE, {
+                                refChangedPaths: ['prop'],
+                                valueChangedPaths: ['prop'],
+                            }),
+                        ]}
                     />
                 </ReferenceTrackerProvider>,
             );
@@ -438,7 +454,6 @@ describe('ReferenceTrackerPanel', () => {
 
     describe('CSS injection', () => {
         it('injects a <style> element with data-rrt attribute', async () => {
-            const user = userEvent.setup();
             render(
                 <ReferenceTrackerProvider>
                     <ReferenceTrackerPanel />

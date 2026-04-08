@@ -1,6 +1,21 @@
 import React, {useContext, useState} from 'react';
-import {copyToClipboard, serializeComponentRecord, serializeRenderRecord, serializeStore, toClipboardText} from './clipboardUtils';
-import {buildComponentStats, buildRefStats, buildRenderStatsText, getCorrectRefs, getRefBadgeColor, getRenderCounts, getRenderHealth, HEALTH_COLOR} from './panelUtils';
+import {
+    copyToClipboard,
+    serializeComponentRecord,
+    serializeRenderRecord,
+    serializeStore,
+    toClipboardText,
+} from './clipboardUtils';
+import {
+    buildComponentStats,
+    buildRefStats,
+    buildRenderStatsText,
+    getCorrectRefs,
+    getRefBadgeColor,
+    getRenderCounts,
+    getRenderHealth,
+    HEALTH_COLOR,
+} from './panelUtils';
 import {ReferenceTrackerStoreContext} from './ReferenceTrackerContext';
 import {RENDER_CLASSIFICATION} from './types';
 import type {RefResult, RenderRecord} from './types';
@@ -312,7 +327,8 @@ function RefResultRow({result}: {result: RefResult}) {
     const color = getRefBadgeColor(result);
     const stats = buildRefStats(result);
     const correctRefs = getCorrectRefs(result);
-    const hasPaths = result.valueChangedPaths.length > 0 || correctRefs.length > 0 || result.unnecessaryRefChanges.length > 0;
+    const hasPaths =
+        result.valueChangedPaths.length > 0 || correctRefs.length > 0 || result.unnecessaryRefChanges.length > 0;
 
     return (
         <div className={`${CSS_PREFIX}-ref-row`}>
@@ -323,32 +339,46 @@ function RefResultRow({result}: {result: RefResult}) {
                 type="button"
             >
                 <span className={`${CSS_PREFIX}-ref-name`}>{result.name}</span>
-                <span className={`${CSS_PREFIX}-ref-badge`} style={{color}}>{stats}</span>
+                <span className={`${CSS_PREFIX}-ref-badge`} style={{color}}>
+                    {stats}
+                </span>
                 {hasPaths && <span className={`${CSS_PREFIX}-expand-arrow`}>{expanded ? '\u25B2' : '\u25BC'}</span>}
             </button>
             {expanded && hasPaths && (
                 <div className={`${CSS_PREFIX}-paths-container`}>
                     {result.valueChangedPaths.length > 0 && (
                         <div>
-                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#28a745'}}>Values changed ({result.valueChangedPaths.length}):</div>
+                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#28a745'}}>
+                                Values changed ({result.valueChangedPaths.length}):
+                            </div>
                             {result.valueChangedPaths.map((p) => (
-                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#28a745'}}>{p}</div>
+                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#28a745'}}>
+                                    {p}
+                                </div>
                             ))}
                         </div>
                     )}
                     {correctRefs.length > 0 && (
                         <div>
-                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#4a9eff'}}>Refs changed correctly ({correctRefs.length}):</div>
+                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#4a9eff'}}>
+                                Refs changed correctly ({correctRefs.length}):
+                            </div>
                             {correctRefs.map((p) => (
-                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#4a9eff'}}>{p}</div>
+                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#4a9eff'}}>
+                                    {p}
+                                </div>
                             ))}
                         </div>
                     )}
                     {result.unnecessaryRefChanges.length > 0 && (
                         <div>
-                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#dc3545'}}>Refs changed unnecessarily ({result.unnecessaryRefChanges.length}):</div>
+                            <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#dc3545'}}>
+                                Refs changed unnecessarily ({result.unnecessaryRefChanges.length}):
+                            </div>
                             {result.unnecessaryRefChanges.map((p) => (
-                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#dc3545'}}>{p}</div>
+                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#dc3545'}}>
+                                    {p}
+                                </div>
                             ))}
                         </div>
                     )}
@@ -394,14 +424,14 @@ function RenderRecordRow({record, nameFilter}: {record: RenderRecord; nameFilter
                     Render #{record.renderId} — {record.duration.toFixed(2)}ms
                 </span>
                 <span className={`${CSS_PREFIX}-row-right`}>
-                    <span className={`${CSS_PREFIX}-render-stats`} style={{color: healthColor}}>{statsText}</span>
+                    <span className={`${CSS_PREFIX}-render-stats`} style={{color: healthColor}}>
+                        {statsText}
+                    </span>
                     <CopyBtn label={`Copy render #${record.renderId} data`} onCopy={handleCopy} />
                 </span>
                 <span className={`${CSS_PREFIX}-expand-arrow`}>{expanded ? '\u25B2' : '\u25BC'}</span>
             </button>
-            {expanded && visibleRefs.map((ref) => (
-                <RefResultRow key={ref.name} result={ref} />
-            ))}
+            {expanded && visibleRefs.map((ref) => <RefResultRow key={ref.name} result={ref} />)}
         </div>
     );
 }
@@ -411,6 +441,7 @@ function ComponentSection({componentId, nameFilter}: {componentId: string; nameF
     const [expanded, setExpanded] = useState(false);
     const record = store.components[componentId];
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Record index can be undefined at runtime
     if (!record) {
         return null;
     }
@@ -433,7 +464,9 @@ function ComponentSection({componentId, nameFilter}: {componentId: string; nameF
                 type="button"
             >
                 <span className={`${CSS_PREFIX}-comp-id-row`}>
-                    {!!record.componentName && <span className={`${CSS_PREFIX}-comp-name`}>{record.componentName}</span>}
+                    {!!record.componentName && (
+                        <span className={`${CSS_PREFIX}-comp-name`}>{record.componentName}</span>
+                    )}
                     <span className={`${CSS_PREFIX}-comp-id`}>{componentId}</span>
                 </span>
                 <span className={`${CSS_PREFIX}-row-right`}>
@@ -443,10 +476,29 @@ function ComponentSection({componentId, nameFilter}: {componentId: string; nameF
                         </span>
                         {hasProblems && (
                             <span className={`${CSS_PREFIX}-comp-stats-badges`}>
-                                {stats.good > 0 && <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.good}}>{'\u2713'}{stats.good}</span>}
-                                {stats.mixed > 0 && <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.mixed}}>~{stats.mixed}</span>}
-                                {stats.bad > 0 && <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.bad}}>{'\u2717'}{stats.bad}</span>}
-                                {stats.empty > 0 && <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.empty}}>{'\u2298'}{stats.empty}</span>}
+                                {stats.good > 0 && (
+                                    <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.good}}>
+                                        {'\u2713'}
+                                        {stats.good}
+                                    </span>
+                                )}
+                                {stats.mixed > 0 && (
+                                    <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.mixed}}>
+                                        ~{stats.mixed}
+                                    </span>
+                                )}
+                                {stats.bad > 0 && (
+                                    <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.bad}}>
+                                        {'\u2717'}
+                                        {stats.bad}
+                                    </span>
+                                )}
+                                {stats.empty > 0 && (
+                                    <span className={`${CSS_PREFIX}-stat-badge`} style={{color: HEALTH_COLOR.empty}}>
+                                        {'\u2298'}
+                                        {stats.empty}
+                                    </span>
+                                )}
                             </span>
                         )}
                     </span>
@@ -475,7 +527,7 @@ function ReferenceTrackerPanel() {
 
     const allIds = Object.keys(store.components);
     const filteredIds = idFilter ? allIds.filter((id) => id.toLowerCase().includes(idFilter.toLowerCase())) : allIds;
-    const totalRenders = allIds.reduce((sum, id) => sum + (store.components[id]?.renders.length ?? 0), 0);
+    const totalRenders = allIds.reduce((sum, id) => sum + store.components[id].renders.length, 0);
 
     function handleCopyAll() {
         copyToClipboard(toClipboardText(serializeStore(store)));
@@ -517,7 +569,9 @@ function ReferenceTrackerPanel() {
                         />
                     </div>
                     <div className={`${CSS_PREFIX}-list`}>
-                        {filteredIds.length === 0 && <div className={`${CSS_PREFIX}-empty`}>No components tracked yet.</div>}
+                        {filteredIds.length === 0 && (
+                            <div className={`${CSS_PREFIX}-empty`}>No components tracked yet.</div>
+                        )}
                         {filteredIds.map((id) => (
                             <ComponentSection key={id} componentId={id} nameFilter={nameFilter} />
                         ))}
@@ -531,9 +585,7 @@ function ReferenceTrackerPanel() {
                 type="button"
             >
                 {open ? '\u2715' : 'RT'}
-                {!open && totalRenders > 0 && (
-                    <span className={`${CSS_PREFIX}-fab-badge`}>{allIds.length}</span>
-                )}
+                {!open && totalRenders > 0 && <span className={`${CSS_PREFIX}-fab-badge`}>{allIds.length}</span>}
             </button>
         </div>
     );

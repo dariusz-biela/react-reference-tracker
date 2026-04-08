@@ -41,7 +41,9 @@ function serializeRenderRecord(record: RenderRecord): SerializedRender {
     return {
         renderId: record.renderId,
         duration_ms: record.duration.toFixed(3),
-        refs: record.refs.filter((r) => r.classification !== 'no-change' && r.classification !== 'initial').map(serializeRef),
+        refs: record.refs
+            .filter((r) => r.classification !== 'no-change' && r.classification !== 'initial')
+            .map(serializeRef),
     };
 }
 
@@ -74,6 +76,7 @@ function copyToClipboard(text: string): void {
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
         textarea.select();
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- intentional fallback for older browsers
         document.execCommand('copy');
         document.body.removeChild(textarea);
     });

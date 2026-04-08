@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import type {ComponentRecord, RenderRecord, RenderTrackerContextValue, RenderTrackerStore} from './types';
 
 const EMPTY_STORE: RenderTrackerStore = {components: {}};
@@ -16,7 +16,7 @@ const ReferenceTrackerStoreContext = React.createContext<StoreContextValue>({
 });
 
 function ReferenceTrackerProvider({children}: {children: React.ReactNode}) {
-    const [store, setStore] = useState<RenderTrackerStore>(EMPTY_STORE);
+    const [store, setStore] = useState(EMPTY_STORE);
 
     const addRender = useCallback((componentId: string, record: RenderRecord, componentName?: string) => {
         setStore((prev) => {

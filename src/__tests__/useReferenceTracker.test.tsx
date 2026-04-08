@@ -38,7 +38,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={val} />
                         <StoreInspector />
-                        <button data-testid="change" onClick={() => setVal(2)}>change</button>
+                        <button data-testid="change" onClick={() => setVal(2)}>
+                            change
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -71,7 +73,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={val} />
                         <StoreInspector />
-                        <button data-testid="inc" onClick={() => setVal((v) => v + 1)}>inc</button>
+                        <button data-testid="inc" onClick={() => setVal((v) => v + 1)}>
+                            inc
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -139,7 +143,9 @@ describe('useReferenceTracker', () => {
             await act(async () => {});
 
             const store = getStore();
-            const comp = Object.values(store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>)[0];
+            const comp = Object.values(
+                store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>,
+            )[0];
             expect(comp.renders[0].refs[0].classification).toBe('initial');
         });
 
@@ -160,7 +166,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={stableRef} />
                         <StoreInspector />
-                        <button data-testid="rerender" onClick={() => setTick((t) => t + 1)}>re</button>
+                        <button data-testid="rerender" onClick={() => setTick((t) => t + 1)}>
+                            re
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -174,7 +182,9 @@ describe('useReferenceTracker', () => {
             await act(async () => {});
 
             const store = getStore();
-            const comp = Object.values(store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>)[0];
+            const comp = Object.values(
+                store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>,
+            )[0];
             const lastRender = comp.renders[comp.renders.length - 1];
             expect(lastRender.refs[0].classification).toBe('no-change');
         });
@@ -194,7 +204,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={val} />
                         <StoreInspector />
-                        <button data-testid="change" onClick={() => setVal(2)}>change</button>
+                        <button data-testid="change" onClick={() => setVal(2)}>
+                            change
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -208,7 +220,9 @@ describe('useReferenceTracker', () => {
             await act(async () => {});
 
             const store = getStore();
-            const comp = Object.values(store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>)[0];
+            const comp = Object.values(
+                store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>,
+            )[0];
             const lastRender = comp.renders[comp.renders.length - 1];
             expect(lastRender.refs[0].classification).toBe('new-ref-with-value');
         });
@@ -229,7 +243,9 @@ describe('useReferenceTracker', () => {
                         {/* Creates a new {x:1} object each render — new ref, same value */}
                         <Tracked value={{x: 1}} />
                         <StoreInspector />
-                        <button data-testid="rerender" onClick={() => setTick((t) => t + 1)}>re</button>
+                        <button data-testid="rerender" onClick={() => setTick((t) => t + 1)}>
+                            re
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -243,7 +259,9 @@ describe('useReferenceTracker', () => {
             await act(async () => {});
 
             const store = getStore();
-            const comp = Object.values(store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>)[0];
+            const comp = Object.values(
+                store.components as Record<string, {renders: {refs: {classification: string}[]}[]}>,
+            )[0];
             const lastRender = comp.renders[comp.renders.length - 1];
             expect(lastRender.refs[0].classification).toBe('new-ref-no-value');
         });
@@ -330,7 +348,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={val} />
                         <StoreInspector />
-                        <button data-testid="inc" onClick={() => setVal((v) => v + 1)}>inc</button>
+                        <button data-testid="inc" onClick={() => setVal((v) => v + 1)}>
+                            inc
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -375,7 +395,9 @@ describe('useReferenceTracker', () => {
                     <ReferenceTrackerProvider>
                         <Tracked value={value} />
                         <StoreInspector />
-                        <button data-testid="change" onClick={() => setDeep(true)}>deep</button>
+                        <button data-testid="change" onClick={() => setDeep(true)}>
+                            deep
+                        </button>
                     </ReferenceTrackerProvider>
                 );
             }
@@ -389,7 +411,9 @@ describe('useReferenceTracker', () => {
             await act(async () => {});
 
             const store = getStore();
-            const comp = Object.values(store.components as Record<string, {renders: {refs: {refChangedPaths: string[]}[]}[]}>)[0];
+            const comp = Object.values(
+                store.components as Record<string, {renders: {refs: {refChangedPaths: string[]}[]}[]}>,
+            )[0];
             const lastRender = comp.renders[comp.renders.length - 1];
             const paths = lastRender.refs[0].refChangedPaths;
             // With maxDepth=1, should not see paths deeper than depth 1 from root

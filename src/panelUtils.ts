@@ -5,7 +5,10 @@ type RenderHealth = 'good' | 'mixed' | 'bad' | 'empty' | 'neutral';
 
 type RenderCounts = {goodCount: number; badCount: number; noChangeCount: number};
 
-const TRULY_BAD = new Set<RenderClassification>([RENDER_CLASSIFICATION.MUTATION, RENDER_CLASSIFICATION.NEW_REF_NO_VALUE]);
+const TRULY_BAD = new Set<RenderClassification>([
+    RENDER_CLASSIFICATION.MUTATION,
+    RENDER_CLASSIFICATION.NEW_REF_NO_VALUE,
+]);
 
 const HEALTH_COLOR: Record<RenderHealth, string> = {
     good: '#28a745',
@@ -26,10 +29,16 @@ function getRefBadgeColor(result: RefResult): string {
     const r = getCorrectRefs(result).length;
     const u = result.unnecessaryRefChanges.length;
 
-    if (result.classification === RENDER_CLASSIFICATION.INITIAL || result.classification === RENDER_CLASSIFICATION.NO_CHANGE) {
+    if (
+        result.classification === RENDER_CLASSIFICATION.INITIAL ||
+        result.classification === RENDER_CLASSIFICATION.NO_CHANGE
+    ) {
         return '#6c757d';
     }
-    if (result.classification === RENDER_CLASSIFICATION.MUTATION || result.classification === RENDER_CLASSIFICATION.NEW_REF_NO_VALUE) {
+    if (
+        result.classification === RENDER_CLASSIFICATION.MUTATION ||
+        result.classification === RENDER_CLASSIFICATION.NEW_REF_NO_VALUE
+    ) {
         return '#dc3545';
     }
     if ((v > 0 || r > 0) && u === 0) {
@@ -50,12 +59,18 @@ function buildRefStats(result: RefResult): string {
             const r = getCorrectRefs(result).length;
             const aV = result.valueChangedPaths.length;
             const aR = result.refChangedPaths.length;
-            return [v > 0 ? `v:${v}` : '', r > 0 ? `r:${r}` : '', u > 0 ? `\u2717u:${u}` : '', `aV:${aV}`, `aR:${aR}`].filter(Boolean).join(' ');
+            return [v > 0 ? `v:${v}` : '', r > 0 ? `r:${r}` : '', u > 0 ? `\u2717u:${u}` : '', `aV:${aV}`, `aR:${aR}`]
+                .filter(Boolean)
+                .join(' ');
         }
         case RENDER_CLASSIFICATION.MUTATION:
             return [`\u2623${v > 0 ? ` v:${v}` : ''}`, `aV:${v}`, `aR:${result.refChangedPaths.length}`].join(' ');
         case RENDER_CLASSIFICATION.NEW_REF_NO_VALUE:
-            return [`\u2717u:${u}`, `aV:${result.valueChangedPaths.length}`, `aR:${result.refChangedPaths.length}`].join(' ');
+            return [
+                `\u2717u:${u}`,
+                `aV:${result.valueChangedPaths.length}`,
+                `aR:${result.refChangedPaths.length}`,
+            ].join(' ');
         case RENDER_CLASSIFICATION.INITIAL:
             return 'init';
         default:
@@ -123,5 +138,15 @@ function buildComponentStats(renders: RenderRecord[]): {good: number; mixed: num
     return {good, mixed, bad, empty};
 }
 
-export {HEALTH_COLOR, TRULY_BAD, getCorrectRefs, getRefBadgeColor, buildRefStats, getRenderCounts, getRenderHealth, buildRenderStatsText, buildComponentStats};
+export {
+    HEALTH_COLOR,
+    TRULY_BAD,
+    getCorrectRefs,
+    getRefBadgeColor,
+    buildRefStats,
+    getRenderCounts,
+    getRenderHealth,
+    buildRenderStatsText,
+    buildComponentStats,
+};
 export type {RenderHealth, RenderCounts};

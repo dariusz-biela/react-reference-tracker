@@ -18,7 +18,7 @@ function makeEmptyCache(): RenderCache {
 
 function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
     const id = useId();
-    const cache = useRef<RenderCache>(makeEmptyCache());
+    const cache = useRef(makeEmptyCache());
     const {addRender} = useContext(ReferenceTrackerActionsContext);
 
     useEffect(() => {

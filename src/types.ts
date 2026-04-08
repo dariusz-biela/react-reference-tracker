@@ -54,4 +54,13 @@ type RenderCache = {
 };
 
 export {RENDER_CLASSIFICATION};
-export type {RenderClassification, RefSnapshot, RefResult, RenderRecord, ComponentRecord, RenderTrackerStore, RenderTrackerContextValue, RenderCache};
+export type {
+    RenderClassification,
+    RefSnapshot,
+    RefResult,
+    RenderRecord,
+    ComponentRecord,
+    RenderTrackerStore,
+    RenderTrackerContextValue,
+    RenderCache,
+};
