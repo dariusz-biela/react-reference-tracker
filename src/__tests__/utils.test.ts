@@ -113,7 +113,10 @@ describe('deepClone', () => {
         });
 
         it('clones a Map', () => {
-            const map = new Map([['a', 1], ['b', 2]]);
+            const map = new Map([
+                ['a', 1],
+                ['b', 2],
+            ]);
             const cloned = deepClone(map) as Map<string, number>;
             expect(cloned).toEqual(map);
             expect(cloned).not.toBe(map);
@@ -437,6 +440,7 @@ describe('analyzeRef', () => {
             const snapshot = makeSnapshot(prev, [1, 2]);
             const result = analyzeRef(snapshot, curr, 'arr', Infinity);
             expect(result.valueChangedPaths).toContain('arr.2');
+            expect(result.valueChangedPaths).toContain('arr.length');
         });
 
         it('detects removed array element (length change)', () => {
@@ -444,7 +448,7 @@ describe('analyzeRef', () => {
             const curr = [1, 2];
             const snapshot = makeSnapshot(prev, [1, 2, 3]);
             const result = analyzeRef(snapshot, curr, 'arr', Infinity);
-            expect(result.valueChangedPaths).toContain('arr.2');
+            expect(result.valueChangedPaths).toContain('arr.length');
         });
 
         it('same array identity returns NO_CHANGE', () => {
@@ -452,6 +456,202 @@ describe('analyzeRef', () => {
             const snapshot = makeSnapshot(arr, [1, 2, 3]);
             const result = analyzeRef(snapshot, arr, 'arr', Infinity);
             expect(result.classification).toBe(RENDER_CLASSIFICATION.NO_CHANGE);
+        });
+    });
+
+    describe('array identity matching', () => {
+        it('insert at beginning — only reports the new element', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const X = {id: 99};
+            const prev = [A, B, C];
+            const curr = [X, A, B, C];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.refChangedPaths).toContain('arr.0');
+            expect(result.refChangedPaths).toContain('arr.length');
+            expect(result.refChangedPaths).not.toContain('arr.1');
+            expect(result.refChangedPaths).not.toContain('arr.2');
+            expect(result.refChangedPaths).not.toContain('arr.3');
+        });
+
+        it('insert at middle — only reports the new element', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const X = {id: 99};
+            const prev = [A, B, C];
+            const curr = [A, X, B, C];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.refChangedPaths).toContain('arr.1');
+            expect(result.refChangedPaths).toContain('arr.length');
+            expect(result.refChangedPaths).not.toContain('arr.2');
+            expect(result.refChangedPaths).not.toContain('arr.3');
+        });
+
+        it('insert at end — only reports the new element', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const X = {id: 99};
+            const prev = [A, B];
+            const curr = [A, B, X];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.refChangedPaths).toContain('arr.2');
+            expect(result.refChangedPaths).toContain('arr.length');
+            expect(result.refChangedPaths).not.toContain('arr.0');
+            expect(result.refChangedPaths).not.toContain('arr.1');
+        });
+
+        it('remove from beginning — only reports length change', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const prev = [A, B, C];
+            const curr = [B, C];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.refChangedPaths).toContain('arr.length');
+            expect(result.valueChangedPaths).toEqual(['arr.length']);
+        });
+
+        it('remove from middle — only reports length change', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const prev = [A, B, C];
+            const curr = [A, C];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toEqual(['arr.length']);
+        });
+
+        it('remove from end — only reports length change', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const prev = [A, B, C];
+            const curr = [A, B];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toEqual(['arr.length']);
+        });
+
+        it('replace element (same length) — reports the replaced position', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const X = {id: 99};
+            const prev = [A, B, C];
+            const curr = [A, X, C];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.refChangedPaths).toContain('arr.1');
+            expect(result.refChangedPaths).not.toContain('arr.length');
+            expect(result.valueChangedPaths).toContain('arr.1.id');
+        });
+
+        it('reorder elements — no value changes detected', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const C = {id: 3};
+            const prev = [A, B, C];
+            const curr = [C, A, B];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}, {id: 3}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.classification).toBe(RENDER_CLASSIFICATION.NEW_REF_NO_VALUE);
+            expect(result.valueChangedPaths).toHaveLength(0);
+        });
+
+        it('primitive array insert — reports new element and length', () => {
+            const prev = [10, 20, 30];
+            const curr = [10, 99, 20, 30];
+            const snapshot = makeSnapshot(prev, [10, 20, 30]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toContain('arr.1');
+            expect(result.valueChangedPaths).toContain('arr.length');
+            expect(result.valueChangedPaths).not.toContain('arr.2');
+            expect(result.valueChangedPaths).not.toContain('arr.3');
+        });
+
+        it('same elements new array — NEW_REF_NO_VALUE', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const prev = [A, B];
+            const curr = [A, B];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.classification).toBe(RENDER_CLASSIFICATION.NEW_REF_NO_VALUE);
+        });
+
+        it('nested arrays in objects — identity matching applies recursively', () => {
+            const child = {val: 1};
+            const prev = {items: [child]};
+            const curr = {items: [child]};
+            const snapshot = makeSnapshot(prev, {items: [{val: 1}]});
+            const result = analyzeRef(snapshot, curr, 'data', Infinity);
+            expect(result.classification).toBe(RENDER_CLASSIFICATION.NEW_REF_NO_VALUE);
+            expect(result.valueChangedPaths).toHaveLength(0);
+        });
+
+        it('duplicate references — matches each occurrence once', () => {
+            const A = {id: 1};
+            const prev = [A, A, A];
+            const curr = [A, A];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 1}, {id: 1}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toEqual(['arr.length']);
+        });
+
+        it('all elements replaced — reports all positions', () => {
+            const A = {id: 1};
+            const B = {id: 2};
+            const X = {id: 10};
+            const Y = {id: 20};
+            const prev = [A, B];
+            const curr = [X, Y];
+            const snapshot = makeSnapshot(prev, [{id: 1}, {id: 2}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toContain('arr.0.id');
+            expect(result.valueChangedPaths).toContain('arr.1.id');
+        });
+
+        it('empty to non-empty — reports additions and length', () => {
+            const prev: unknown[] = [];
+            const curr = [{id: 1}];
+            const snapshot = makeSnapshot(prev, []);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toContain('arr.0');
+            expect(result.valueChangedPaths).toContain('arr.length');
+        });
+
+        it('non-empty to empty — reports length change', () => {
+            const A = {id: 1};
+            const prev = [A];
+            const curr: unknown[] = [];
+            const snapshot = makeSnapshot(prev, [{id: 1}]);
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toEqual(['arr.length']);
+        });
+
+        it('mutation detection with shifted elements', () => {
+            const A = {id: 1, val: 'a'};
+            const B = {id: 2, val: 'b'};
+            const C = {id: 3, val: 'c'};
+            const prev = [A, B, C];
+            const snapshot = makeSnapshot(prev, [
+                {id: 1, val: 'a'},
+                {id: 2, val: 'b'},
+                {id: 3, val: 'c'},
+            ]);
+            A.val = 'mutated';
+            const curr = [B, A, C];
+            const result = analyzeRef(snapshot, curr, 'arr', Infinity);
+            expect(result.valueChangedPaths).toContain('arr.1.val');
+            expect(result.valueChangedPaths).not.toContain('arr.0.val');
+            expect(result.valueChangedPaths).not.toContain('arr.2.val');
         });
     });
 

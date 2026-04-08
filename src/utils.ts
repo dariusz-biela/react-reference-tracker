@@ -7,6 +7,56 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
 }
 
+interface ArrayMatchResult {
+    matched: [number, number][];
+    unmatchedPrev: number[];
+    unmatchedCurr: number[];
+}
+
+function matchArrayByIdentity(prev: unknown[], curr: unknown[]): ArrayMatchResult {
+    const matched: [number, number][] = [];
+    const unmatchedPrev: number[] = [];
+    const usedCurrIndices = new Set<number>();
+
+    const currIndices = new Map<unknown, number[]>();
+    for (let i = 0; i < curr.length; i++) {
+        const element = curr[i];
+        const indices = currIndices.get(element);
+        if (indices) {
+            indices.push(i);
+        } else {
+            currIndices.set(element, [i]);
+        }
+    }
+
+    for (let i = 0; i < prev.length; i++) {
+        const indices = currIndices.get(prev[i]);
+        let found = false;
+        if (indices) {
+            for (const idx of indices) {
+                if (!usedCurrIndices.has(idx)) {
+                    matched.push([i, idx]);
+                    usedCurrIndices.add(idx);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            unmatchedPrev.push(i);
+        }
+    }
+
+    const unmatchedCurr: number[] = [];
+    for (let i = 0; i < curr.length; i++) {
+        if (!usedCurrIndices.has(i)) {
+            unmatchedCurr.push(i);
+        }
+    }
+
+    return {matched, unmatchedPrev, unmatchedCurr};
+}
+
 function deepClone(value: unknown): unknown {
     if (value === null || value === undefined || typeof value !== 'object') {
         return value;
@@ -18,7 +68,14 @@ function deepClone(value: unknown): unknown {
     }
 }
 
-function getRefChangedPaths(prev: unknown, curr: unknown, path: string, maxDepth: number, depth: number, changes: string[]): void {
+function getRefChangedPaths(
+    prev: unknown,
+    curr: unknown,
+    path: string,
+    maxDepth: number,
+    depth: number,
+    changes: string[],
+): void {
     if (changes.length >= MAX_LOGGED_PATHS || depth > maxDepth) {
         return;
     }
@@ -26,7 +83,35 @@ function getRefChangedPaths(prev: unknown, curr: unknown, path: string, maxDepth
         return;
     }
     changes.push(path);
-    if (isRecord(prev) && isRecord(curr)) {
+    if (Array.isArray(prev) && Array.isArray(curr)) {
+        const {unmatchedPrev, unmatchedCurr} = matchArrayByIdentity(prev, curr);
+        const pairCount = Math.min(unmatchedPrev.length, unmatchedCurr.length);
+        for (let i = 0; i < pairCount; i++) {
+            if (changes.length >= MAX_LOGGED_PATHS) return;
+            getRefChangedPaths(
+                prev[unmatchedPrev[i]],
+                curr[unmatchedCurr[i]],
+                `${path}.${unmatchedCurr[i]}`,
+                maxDepth,
+                depth + 1,
+                changes,
+            );
+        }
+        for (let i = pairCount; i < unmatchedCurr.length; i++) {
+            if (changes.length >= MAX_LOGGED_PATHS) return;
+            getRefChangedPaths(
+                undefined,
+                curr[unmatchedCurr[i]],
+                `${path}.${unmatchedCurr[i]}`,
+                maxDepth,
+                depth + 1,
+                changes,
+            );
+        }
+        if (prev.length !== curr.length && changes.length < MAX_LOGGED_PATHS) {
+            changes.push(`${path}.length`);
+        }
+    } else if (isRecord(prev) && isRecord(curr)) {
         const allKeys = new Set([...Object.keys(prev), ...Object.keys(curr)]);
         for (const key of allKeys) {
             if (changes.length >= MAX_LOGGED_PATHS) {
@@ -37,8 +122,60 @@ function getRefChangedPaths(prev: unknown, curr: unknown, path: string, maxDepth
     }
 }
 
-function getValueChangedPaths(prev: unknown, curr: unknown, path: string, maxDepth: number, depth: number, changes: string[]): void {
+function getValueChangedPaths(
+    prev: unknown,
+    curr: unknown,
+    path: string,
+    maxDepth: number,
+    depth: number,
+    changes: string[],
+    prevRaw: unknown,
+): void {
     if (changes.length >= MAX_LOGGED_PATHS || depth > maxDepth) {
+        return;
+    }
+    if (Array.isArray(prev) && Array.isArray(curr) && Array.isArray(prevRaw)) {
+        const {matched, unmatchedPrev, unmatchedCurr} = matchArrayByIdentity(prevRaw, curr);
+        for (const [prevIdx, currIdx] of matched) {
+            if (changes.length >= MAX_LOGGED_PATHS) return;
+            getValueChangedPaths(
+                prev[prevIdx],
+                curr[currIdx],
+                `${path}.${currIdx}`,
+                maxDepth,
+                depth + 1,
+                changes,
+                prevRaw[prevIdx],
+            );
+        }
+        const pairCount = Math.min(unmatchedPrev.length, unmatchedCurr.length);
+        for (let i = 0; i < pairCount; i++) {
+            if (changes.length >= MAX_LOGGED_PATHS) return;
+            getValueChangedPaths(
+                prev[unmatchedPrev[i]],
+                curr[unmatchedCurr[i]],
+                `${path}.${unmatchedCurr[i]}`,
+                maxDepth,
+                depth + 1,
+                changes,
+                prevRaw[unmatchedPrev[i]],
+            );
+        }
+        for (let i = pairCount; i < unmatchedCurr.length; i++) {
+            if (changes.length >= MAX_LOGGED_PATHS) return;
+            getValueChangedPaths(
+                undefined,
+                curr[unmatchedCurr[i]],
+                `${path}.${unmatchedCurr[i]}`,
+                maxDepth,
+                depth + 1,
+                changes,
+                undefined,
+            );
+        }
+        if (prev.length !== curr.length && changes.length < MAX_LOGGED_PATHS) {
+            changes.push(`${path}.length`);
+        }
         return;
     }
     if (isRecord(prev) && isRecord(curr)) {
@@ -47,7 +184,15 @@ function getValueChangedPaths(prev: unknown, curr: unknown, path: string, maxDep
             if (changes.length >= MAX_LOGGED_PATHS) {
                 return;
             }
-            getValueChangedPaths(prev[key], curr[key], `${path}.${key}`, maxDepth, depth + 1, changes);
+            getValueChangedPaths(
+                prev[key],
+                curr[key],
+                `${path}.${key}`,
+                maxDepth,
+                depth + 1,
+                changes,
+                isRecord(prevRaw) ? prevRaw[key] : undefined,
+            );
         }
         return;
     }
@@ -64,7 +209,11 @@ function getUnnecessaryRefChanges(refChanges: string[], valueChanges: string[]):
     return refChanges.filter((refPath) => !valueChanges.some((valPath) => isDescendantOrSelf(refPath, valPath)));
 }
 
-function classifyRender(refSame: boolean, valueChangedPaths: string[], unnecessaryRefChanges: string[]): RenderClassification {
+function classifyRender(
+    refSame: boolean,
+    valueChangedPaths: string[],
+    unnecessaryRefChanges: string[],
+): RenderClassification {
     if (refSame && valueChangedPaths.length === 0) {
         return RENDER_CLASSIFICATION.NO_CHANGE;
     }
@@ -77,7 +226,12 @@ function classifyRender(refSame: boolean, valueChangedPaths: string[], unnecessa
     return RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE;
 }
 
-function analyzeRef(snapshot: RefSnapshot | undefined, currentValue: unknown, name: string, maxDepth: number): RefResult {
+function analyzeRef(
+    snapshot: RefSnapshot | undefined,
+    currentValue: unknown,
+    name: string,
+    maxDepth: number,
+): RefResult {
     if (snapshot === undefined) {
         return {
             name,
@@ -96,7 +250,7 @@ function analyzeRef(snapshot: RefSnapshot | undefined, currentValue: unknown, na
     }
 
     const valueChangedPaths: string[] = [];
-    getValueChangedPaths(snapshot.clone, currentValue, name, maxDepth, 0, valueChangedPaths);
+    getValueChangedPaths(snapshot.clone, currentValue, name, maxDepth, 0, valueChangedPaths, snapshot.raw);
 
     const unnecessaryRefChanges = getUnnecessaryRefChanges(refChangedPaths, valueChangedPaths);
     const classification = classifyRender(refSame, valueChangedPaths, unnecessaryRefChanges);
