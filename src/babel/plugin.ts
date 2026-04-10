@@ -81,6 +81,36 @@ export default function babelPluginTrackRefs({types: t}: {types: typeof BabelTyp
         name: 'babel-plugin-track-refs',
         visitor: {
             Program: {
+                enter(programPath, state) {
+                    programPath.traverse({
+                        FunctionDeclaration(path: NodePath<BabelTypes.FunctionDeclaration>) {
+                            if (!hasTrackRefsAnnotation(path.node)) {
+                                return;
+                            }
+                            const componentName = path.node.id?.name ?? 'Anonymous';
+                            instrumentFunction(t, path, componentName, state);
+                        },
+                        VariableDeclaration(path: NodePath<BabelTypes.VariableDeclaration>) {
+                            if (!hasTrackRefsAnnotation(path.node)) {
+                                return;
+                            }
+                            for (const decl of path.node.declarations) {
+                                if (
+                                    decl.init &&
+                                    (decl.init.type === 'ArrowFunctionExpression' ||
+                                        decl.init.type === 'FunctionExpression') &&
+                                    decl.id.type === 'Identifier'
+                                ) {
+                                    const componentName = decl.id.name;
+                                    const funcPath = path.get(
+                                        `declarations.${path.node.declarations.indexOf(decl)}.init`,
+                                    ) as NodePath<BabelTypes.ArrowFunctionExpression | BabelTypes.FunctionExpression>;
+                                    instrumentFunction(t, funcPath, componentName, state);
+                                }
+                            }
+                        },
+                    });
+                },
                 exit(programPath, state) {
                     if (!state.needsImport) {
                         return;
@@ -109,36 +139,6 @@ export default function babelPluginTrackRefs({types: t}: {types: typeof BabelTyp
 
                     programPath.unshiftContainer('body', importDecl);
                 },
-            },
-
-            FunctionDeclaration(path, state) {
-                if (!hasTrackRefsAnnotation(path.node)) {
-                    return;
-                }
-
-                const componentName = path.node.id?.name ?? 'Anonymous';
-                instrumentFunction(t, path, componentName, state);
-            },
-
-            VariableDeclaration(path, state) {
-                if (!hasTrackRefsAnnotation(path.node)) {
-                    return;
-                }
-
-                for (const decl of path.node.declarations) {
-                    if (
-                        decl.init &&
-                        (decl.init.type === 'ArrowFunctionExpression' || decl.init.type === 'FunctionExpression') &&
-                        decl.id.type === 'Identifier'
-                    ) {
-                        const componentName = decl.id.name;
-                        const funcPath = path.get(
-                            `declarations.${path.node.declarations.indexOf(decl)}.init`,
-                        ) as NodePath<BabelTypes.ArrowFunctionExpression | BabelTypes.FunctionExpression>;
-
-                        instrumentFunction(t, funcPath, componentName, state);
-                    }
-                }
             },
         },
     };
@@ -189,10 +189,9 @@ function instrumentFunction(
         returnIndex = body.body.length;
     }
 
-    const useNoMemoDirective = t.expressionStatement(t.stringLiteral('use no memo'));
-    body.body.splice(0, 0, useNoMemoDirective, trackerDecl);
-    // returnIndex shifted by 2 after inserting directive + trackerDecl
-    body.body.splice(returnIndex + 2, 0, ...trackingStatements);
+    body.body.splice(0, 0, trackerDecl);
+    // returnIndex shifted by 1 after inserting trackerDecl
+    body.body.splice(returnIndex + 1, 0, ...trackingStatements);
 
     state.needsImport = true;
 }

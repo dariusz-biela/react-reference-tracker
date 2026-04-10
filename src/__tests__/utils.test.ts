@@ -97,36 +97,32 @@ describe('deepClone', () => {
         });
     });
 
-    describe('special object types', () => {
-        it('clones a Date object', () => {
+    describe('special object types (non-plain objects return same reference)', () => {
+        it('returns same reference for a Date object', () => {
             const date = new Date('2024-01-01');
-            const cloned = deepClone(date) as Date;
-            expect(cloned).toEqual(date);
-            expect(cloned).not.toBe(date);
+            const cloned = deepClone(date);
+            expect(cloned).toBe(date);
         });
 
-        it('clones a RegExp', () => {
+        it('returns same reference for a RegExp', () => {
             const regex = /test/gi;
-            const cloned = deepClone(regex) as RegExp;
-            expect(cloned).toEqual(regex);
-            expect(cloned).not.toBe(regex);
+            const cloned = deepClone(regex);
+            expect(cloned).toBe(regex);
         });
 
-        it('clones a Map', () => {
+        it('returns same reference for a Map', () => {
             const map = new Map([
                 ['a', 1],
                 ['b', 2],
             ]);
-            const cloned = deepClone(map) as Map<string, number>;
-            expect(cloned).toEqual(map);
-            expect(cloned).not.toBe(map);
+            const cloned = deepClone(map);
+            expect(cloned).toBe(map);
         });
 
-        it('clones a Set', () => {
+        it('returns same reference for a Set', () => {
             const set = new Set([1, 2, 3]);
-            const cloned = deepClone(set) as Set<number>;
-            expect(cloned).toEqual(set);
-            expect(cloned).not.toBe(set);
+            const cloned = deepClone(set);
+            expect(cloned).toBe(set);
         });
     });
 

@@ -76,30 +76,27 @@ describe('track-refs plugin interaction with React Compiler', () => {
         expect(output).not.toMatch(/const \[count,/);
     });
 
-    it('track-refs FIRST, React Compiler SECOND: compiler corrupts labels', () => {
+    it('track-refs FIRST (Program:enter), React Compiler SECOND: original labels preserved', () => {
         const output = transformWithBothPlugins(SAMPLE_COMPONENT, true);
         const labels = extractListenLabels(output);
 
-        console.log('=== track-refs FIRST, React Compiler SECOND ===');
+        console.log('=== track-refs FIRST (Program:enter), React Compiler SECOND ===');
         console.log(output);
         console.log('Labels:', labels);
 
-        // React Compiler restructures the entire function body including our injected code.
-        // Some original names survive (destructured vars), but props param & temporaries get renamed.
-        const hasCompiledLabels = labels.some((label) => /^t\d+$/.test(label) || label === '$');
-        expect(hasCompiledLabels).toBe(true);
-
-        // Original names that survived destructuring
+        // All original variable names must be preserved as string labels
         expect(labels).toContain('user');
+        expect(labels).toContain('config');
         expect(labels).toContain('count');
+        expect(labels).toContain('setCount');
+        expect(labels).toContain('theme');
 
-        // Original names that were lost
-        expect(labels).not.toContain('config');
-        expect(labels).not.toContain('setCount');
-        expect(labels).not.toContain('theme');
+        // No compiled names (t0, t1, $) should appear as labels
+        const hasCompiledLabels = labels.some((label) => /^t\d+$/.test(label) || label === '$');
+        expect(hasCompiledLabels).toBe(false);
     });
 
-    it('React Compiler FIRST, track-refs SECOND: all labels are compiled names', () => {
+    it('React Compiler FIRST, track-refs SECOND: labels are compiled names', () => {
         const output = transformWithBothPlugins(SAMPLE_COMPONENT, false);
         const labels = extractListenLabels(output);
 
