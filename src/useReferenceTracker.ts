@@ -42,10 +42,14 @@ function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
     }
 
     function listenForChanges(value: unknown, refName: string) {
-        const snapshot = cache.current.snapshots.get(refName);
-        const result = analyzeRef(snapshot, value, refName, maxDepth);
-        cache.current.currentResults.push(result);
-        cache.current.pendingSnapshots.set(refName, {raw: value, clone: deepClone(value)});
+        try {
+            const snapshot = cache.current.snapshots.get(refName);
+            const result = analyzeRef(snapshot, value, refName, maxDepth);
+            cache.current.currentResults.push(result);
+            cache.current.pendingSnapshots.set(refName, {raw: value, clone: deepClone(value)});
+        } catch {
+            cache.current.pendingSnapshots.set(refName, {raw: value, clone: value});
+        }
     }
 
     function endRender() {

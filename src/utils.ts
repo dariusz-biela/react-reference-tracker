@@ -57,8 +57,22 @@ function matchArrayByIdentity(prev: unknown[], curr: unknown[]): ArrayMatchResul
     return {matched, unmatchedPrev, unmatchedCurr};
 }
 
+function isPlainObjectOrArray(value: unknown): boolean {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    if (Array.isArray(value)) {
+        return true;
+    }
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+}
+
 function deepClone(value: unknown): unknown {
     if (value === null || value === undefined || typeof value !== 'object') {
+        return value;
+    }
+    if (!isPlainObjectOrArray(value)) {
         return value;
     }
     try {
@@ -75,6 +89,7 @@ function getRefChangedPaths(
     maxDepth: number,
     depth: number,
     changes: string[],
+    seen?: Set<unknown>,
 ): void {
     if (changes.length >= MAX_LOGGED_PATHS || depth > maxDepth) {
         return;
@@ -83,6 +98,17 @@ function getRefChangedPaths(
         return;
     }
     changes.push(path);
+
+    const visited = seen ?? new Set<unknown>();
+    if (isRecord(prev)) {
+        if (visited.has(prev)) return;
+        visited.add(prev);
+    }
+    if (isRecord(curr)) {
+        if (visited.has(curr)) return;
+        visited.add(curr);
+    }
+
     if (Array.isArray(prev) && Array.isArray(curr)) {
         const {unmatchedPrev, unmatchedCurr} = matchArrayByIdentity(prev, curr);
         const pairCount = Math.min(unmatchedPrev.length, unmatchedCurr.length);
@@ -95,6 +121,7 @@ function getRefChangedPaths(
                 maxDepth,
                 depth + 1,
                 changes,
+                visited,
             );
         }
         for (let i = pairCount; i < unmatchedCurr.length; i++) {
@@ -106,6 +133,7 @@ function getRefChangedPaths(
                 maxDepth,
                 depth + 1,
                 changes,
+                visited,
             );
         }
         if (prev.length !== curr.length && changes.length < MAX_LOGGED_PATHS) {
@@ -117,7 +145,7 @@ function getRefChangedPaths(
             if (changes.length >= MAX_LOGGED_PATHS) {
                 return;
             }
-            getRefChangedPaths(prev[key], curr[key], `${path}.${key}`, maxDepth, depth + 1, changes);
+            getRefChangedPaths(prev[key], curr[key], `${path}.${key}`, maxDepth, depth + 1, changes, visited);
         }
     }
 }
@@ -130,10 +158,18 @@ function getValueChangedPaths(
     depth: number,
     changes: string[],
     prevRaw: unknown,
+    seen?: Set<unknown>,
 ): void {
     if (changes.length >= MAX_LOGGED_PATHS || depth > maxDepth) {
         return;
     }
+
+    const visited = seen ?? new Set<unknown>();
+    if (isRecord(curr)) {
+        if (visited.has(curr)) return;
+        visited.add(curr);
+    }
+
     if (Array.isArray(prev) && Array.isArray(curr) && Array.isArray(prevRaw)) {
         const {matched, unmatchedPrev, unmatchedCurr} = matchArrayByIdentity(prevRaw, curr);
         for (const [prevIdx, currIdx] of matched) {
@@ -146,6 +182,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 prevRaw[prevIdx],
+                visited,
             );
         }
         const pairCount = Math.min(unmatchedPrev.length, unmatchedCurr.length);
@@ -159,6 +196,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 prevRaw[unmatchedPrev[i]],
+                visited,
             );
         }
         for (let i = pairCount; i < unmatchedCurr.length; i++) {
@@ -171,6 +209,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 undefined,
+                visited,
             );
         }
         if (prev.length !== curr.length && changes.length < MAX_LOGGED_PATHS) {
@@ -192,6 +231,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 isRecord(prevRaw) ? prevRaw[key] : undefined,
+                visited,
             );
         }
         return;
