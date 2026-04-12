@@ -150,15 +150,16 @@ function getRefChangedPaths(
     }
 }
 
+const MAX_SERIALIZED_LENGTH = 120;
+
 function serializeValue(val: unknown): string {
     if (val === undefined) return 'undefined';
     if (val === null) return 'null';
+    if (typeof val === 'function') return 'Function';
     if (typeof val === 'string') return val.length > 60 ? `"${val.slice(0, 57)}..."` : `"${val}"`;
     if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-    if (Array.isArray(val)) return `Array(${val.length})`;
-    if (typeof val === 'function') return 'Function';
-    if (typeof val === 'object') return `Object(${Object.keys(val).length} keys)`;
-    return String(val);
+    const json = JSON.stringify(val);
+    return json.length > MAX_SERIALIZED_LENGTH ? `${json.slice(0, MAX_SERIALIZED_LENGTH - 3)}...` : json;
 }
 
 function getValueChangedPaths(
@@ -255,9 +256,7 @@ function getValueChangedPaths(
     }
     if (prev !== curr) {
         changes.push(path);
-        if (!isRecord(prev) && !isRecord(curr) && !Array.isArray(prev) && !Array.isArray(curr)) {
-            details.push({path, prev: serializeValue(prev), curr: serializeValue(curr)});
-        }
+        details.push({path, prev: serializeValue(prev), curr: serializeValue(curr)});
     }
 }
 

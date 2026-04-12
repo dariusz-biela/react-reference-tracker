@@ -28,40 +28,44 @@ type SerializedStore = {
     components: SerializedComponent[];
 };
 
-function serializeRef(ref: RefResult): SerializedRef {
-    return {
+function serializeRef(ref: RefResult, includeDetails = true): SerializedRef {
+    const base: SerializedRef = {
         name: ref.name,
         classification: ref.classification,
         valuesChanged: ref.valueChangedPaths,
-        valuesChangedDetails: ref.valueChangedDetails,
+        valuesChangedDetails: [],
         correctRefChanges: getCorrectRefs(ref),
         unnecessaryRefChanges: ref.unnecessaryRefChanges,
     };
+    if (includeDetails) {
+        base.valuesChangedDetails = ref.valueChangedDetails;
+    }
+    return base;
 }
 
-function serializeRenderRecord(record: RenderRecord): SerializedRender {
+function serializeRenderRecord(record: RenderRecord, includeDetails = true): SerializedRender {
     return {
         renderId: record.renderId,
         duration_ms: record.duration.toFixed(3),
         refs: record.refs
             .filter((r) => r.classification !== 'no-change' && r.classification !== 'initial')
-            .map(serializeRef),
+            .map((r) => serializeRef(r, includeDetails)),
     };
 }
 
-function serializeComponentRecord(component: ComponentRecord): SerializedComponent {
+function serializeComponentRecord(component: ComponentRecord, includeDetails = true): SerializedComponent {
     return {
         componentId: component.componentId,
         componentName: component.componentName,
         totalRenders: component.renders.length,
-        renders: component.renders.map(serializeRenderRecord),
+        renders: component.renders.map((r) => serializeRenderRecord(r, includeDetails)),
     };
 }
 
-function serializeStore(store: RenderTrackerStore): SerializedStore {
+function serializeStore(store: RenderTrackerStore, includeDetails = true): SerializedStore {
     return {
         exportedAt: new Date().toISOString(),
-        components: Object.values(store.components).map(serializeComponentRecord),
+        components: Object.values(store.components).map((c) => serializeComponentRecord(c, includeDetails)),
     };
 }
 

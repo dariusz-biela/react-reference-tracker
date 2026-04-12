@@ -286,6 +286,23 @@ const PANEL_STYLES = `
     font-family: monospace;
     padding-left: 8px;
 }
+.${CSS_PREFIX}-detail-value {
+    color: #888;
+    font-size: 9px;
+    font-family: monospace;
+    padding-left: 16px;
+}
+.${CSS_PREFIX}-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 11px;
+    cursor: pointer;
+}
+.${CSS_PREFIX}-checkbox-label input {
+    accent-color: #4a9eff;
+}
 `;
 
 let stylesInjected = false;
@@ -323,7 +340,7 @@ function CopyBtn({onCopy, label}: {onCopy: () => void; label: string}) {
     );
 }
 
-function RefResultRow({result}: {result: RefResult}) {
+function RefResultRow({result, showDetails}: {result: RefResult; showDetails: boolean}) {
     const [expanded, setExpanded] = useState(false);
     const color = getRefBadgeColor(result);
     const stats = buildRefStats(result);
@@ -352,11 +369,23 @@ function RefResultRow({result}: {result: RefResult}) {
                             <div className={`${CSS_PREFIX}-paths-label`} style={{color: '#28a745'}}>
                                 Values changed ({result.valueChangedPaths.length}):
                             </div>
-                            {result.valueChangedPaths.map((p) => (
-                                <div key={p} className={`${CSS_PREFIX}-path-item`} style={{color: '#28a745'}}>
-                                    {p}
-                                </div>
-                            ))}
+                            {result.valueChangedPaths.map((p) => {
+                                const detail = showDetails
+                                    ? result.valueChangedDetails.find((d) => d.path === p)
+                                    : undefined;
+                                return (
+                                    <div key={p}>
+                                        <div className={`${CSS_PREFIX}-path-item`} style={{color: '#28a745'}}>
+                                            {p}
+                                        </div>
+                                        {detail && (
+                                            <div className={`${CSS_PREFIX}-detail-value`}>
+                                                {detail.prev} → {detail.curr}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                     {correctRefs.length > 0 && (
@@ -389,7 +418,15 @@ function RefResultRow({result}: {result: RefResult}) {
     );
 }
 
-function RenderRecordRow({record, nameFilter}: {record: RenderRecord; nameFilter: string}) {
+function RenderRecordRow({
+    record,
+    nameFilter,
+    showDetails,
+}: {
+    record: RenderRecord;
+    nameFilter: string;
+    showDetails: boolean;
+}) {
     const [expanded, setExpanded] = useState(false);
 
     const counts = getRenderCounts(record.refs);
@@ -410,7 +447,7 @@ function RenderRecordRow({record, nameFilter}: {record: RenderRecord; nameFilter
     const statsText = buildRenderStatsText(health, counts);
 
     function handleCopy() {
-        copyToClipboard(toClipboardText(serializeRenderRecord(record)));
+        copyToClipboard(toClipboardText(serializeRenderRecord(record, showDetails)));
     }
 
     return (
@@ -432,12 +469,21 @@ function RenderRecordRow({record, nameFilter}: {record: RenderRecord; nameFilter
                 </span>
                 <span className={`${CSS_PREFIX}-expand-arrow`}>{expanded ? '\u25B2' : '\u25BC'}</span>
             </button>
-            {expanded && visibleRefs.map((ref) => <RefResultRow key={ref.name} result={ref} />)}
+            {expanded &&
+                visibleRefs.map((ref) => <RefResultRow key={ref.name} result={ref} showDetails={showDetails} />)}
         </div>
     );
 }
 
-function ComponentSection({componentId, nameFilter}: {componentId: string; nameFilter: string}) {
+function ComponentSection({
+    componentId,
+    nameFilter,
+    showDetails,
+}: {
+    componentId: string;
+    nameFilter: string;
+    showDetails: boolean;
+}) {
     const {store} = useContext(ReferenceTrackerStoreContext);
     const [expanded, setExpanded] = useState(false);
     const record = store.components[componentId];
@@ -453,7 +499,7 @@ function ComponentSection({componentId, nameFilter}: {componentId: string; nameF
     const hasProblems = stats.bad > 0 || stats.empty > 0 || stats.mixed > 0;
 
     function handleCopy() {
-        copyToClipboard(toClipboardText(serializeComponentRecord(record)));
+        copyToClipboard(toClipboardText(serializeComponentRecord(record, showDetails)));
     }
 
     return (
@@ -510,7 +556,12 @@ function ComponentSection({componentId, nameFilter}: {componentId: string; nameF
             {expanded && (
                 <div className={`${CSS_PREFIX}-renders-container`}>
                     {[...record.renders].reverse().map((r) => (
-                        <RenderRecordRow key={r.renderId} record={r} nameFilter={nameFilter} />
+                        <RenderRecordRow
+                            key={r.renderId}
+                            record={r}
+                            nameFilter={nameFilter}
+                            showDetails={showDetails}
+                        />
                     ))}
                 </div>
             )}
@@ -525,13 +576,14 @@ function ReferenceTrackerPanel() {
     const [open, setOpen] = useState(false);
     const [idFilter, setIdFilter] = useState('');
     const [nameFilter, setNameFilter] = useState('');
+    const [showDetails, setShowDetails] = useState(false);
 
     const allIds = Object.keys(store.components);
     const filteredIds = idFilter ? allIds.filter((id) => id.toLowerCase().includes(idFilter.toLowerCase())) : allIds;
     const totalRenders = allIds.reduce((sum, id) => sum + store.components[id].renders.length, 0);
 
     function handleCopyAll() {
-        copyToClipboard(toClipboardText(serializeStore(store)));
+        copyToClipboard(toClipboardText(serializeStore(store, showDetails)));
     }
 
     return (
@@ -568,13 +620,27 @@ function ReferenceTrackerPanel() {
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
                         />
+                        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+                        <label className={`${CSS_PREFIX}-checkbox-label`}>
+                            <input
+                                type="checkbox"
+                                checked={showDetails}
+                                onChange={(e) => setShowDetails(e.target.checked)}
+                            />
+                            Show value details
+                        </label>
                     </div>
                     <div className={`${CSS_PREFIX}-list`}>
                         {filteredIds.length === 0 && (
                             <div className={`${CSS_PREFIX}-empty`}>No components tracked yet.</div>
                         )}
                         {filteredIds.map((id) => (
-                            <ComponentSection key={id} componentId={id} nameFilter={nameFilter} />
+                            <ComponentSection
+                                key={id}
+                                componentId={id}
+                                nameFilter={nameFilter}
+                                showDetails={showDetails}
+                            />
                         ))}
                     </div>
                 </div>
