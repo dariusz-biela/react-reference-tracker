@@ -17,7 +17,7 @@ import {
     HEALTH_COLOR,
     isUnstableRef,
 } from './panelUtils';
-import {ReferenceTrackerStoreContext} from './ReferenceTrackerContext';
+import {ReferenceTrackerEnabledContext, ReferenceTrackerStoreContext} from './ReferenceTrackerContext';
 import {RENDER_CLASSIFICATION} from './types';
 import type {RefResult, RenderRecord} from './types';
 
@@ -573,6 +573,7 @@ function ReferenceTrackerPanel() {
     injectStyles();
 
     const {store, clearAll} = useContext(ReferenceTrackerStoreContext);
+    const {enabled, setEnabled} = useContext(ReferenceTrackerEnabledContext);
     const [open, setOpen] = useState(false);
     const [idFilter, setIdFilter] = useState('');
     const [nameFilter, setNameFilter] = useState('');
@@ -606,6 +607,10 @@ function ReferenceTrackerPanel() {
                         </span>
                     </div>
                     <div className={`${CSS_PREFIX}-filters`}>
+                        <label className={`${CSS_PREFIX}-checkbox-label`}>
+                            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+                            Tracking enabled
+                        </label>
                         <input
                             aria-label="Filter by component id"
                             className={`${CSS_PREFIX}-filter-input`}
@@ -620,7 +625,6 @@ function ReferenceTrackerPanel() {
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
                         />
-                        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                         <label className={`${CSS_PREFIX}-checkbox-label`}>
                             <input
                                 type="checkbox"

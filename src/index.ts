@@ -1,4 +1,4 @@
-export {ReferenceTrackerProvider} from './ReferenceTrackerContext';
+export {ReferenceTrackerEnabledContext, ReferenceTrackerProvider} from './ReferenceTrackerContext';
 export {default as ReferenceTrackerPanel} from './ReferenceTrackerPanel';
 export {default as useReferenceTracker} from './useReferenceTracker';
 export {serializeStore} from './clipboardUtils';

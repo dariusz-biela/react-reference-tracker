@@ -6,6 +6,7 @@ const EMPTY_STORE: RenderTrackerStore = {components: {}};
 
 type ActionsContextValue = Pick<RenderTrackerContextValue, 'addRender'>;
 type StoreContextValue = Pick<RenderTrackerContextValue, 'store' | 'clearAll'>;
+type EnabledContextValue = {enabled: boolean; setEnabled: (v: boolean) => void};
 
 const ReferenceTrackerActionsContext = React.createContext<ActionsContextValue>({
     addRender: () => undefined,
@@ -16,7 +17,20 @@ const ReferenceTrackerStoreContext = React.createContext<StoreContextValue>({
     clearAll: () => undefined,
 });
 
-function ReferenceTrackerProvider({children}: {children: React.ReactNode; isOnSearch?: boolean}) {
+const NOOP_SET_ENABLED = () => {};
+const ReferenceTrackerEnabledContext = React.createContext<EnabledContextValue>({
+    enabled: true,
+    setEnabled: NOOP_SET_ENABLED,
+});
+
+function ReferenceTrackerProvider({
+    children,
+    enabled: enabledProp = true,
+}: {
+    children: React.ReactNode;
+    enabled?: boolean;
+}) {
+    const [enabled, setEnabled] = useState(enabledProp);
     const [store, setStore] = useState(EMPTY_STORE);
 
     const addRender = useCallback((componentId: string, record: RenderRecord, componentName?: string) => {
@@ -45,12 +59,22 @@ function ReferenceTrackerProvider({children}: {children: React.ReactNode; isOnSe
 
     const actionsValue = useMemo(() => ({addRender}), [addRender]);
     const storeValue = useMemo(() => ({store, clearAll}), [store, clearAll]);
+    const enabledValue = useMemo(() => ({enabled, setEnabled}), [enabled]);
 
     return (
-        <ReferenceTrackerActionsContext.Provider value={actionsValue}>
-            <ReferenceTrackerStoreContext.Provider value={storeValue}>{children}</ReferenceTrackerStoreContext.Provider>
-        </ReferenceTrackerActionsContext.Provider>
+        <ReferenceTrackerEnabledContext.Provider value={enabledValue}>
+            <ReferenceTrackerActionsContext.Provider value={actionsValue}>
+                <ReferenceTrackerStoreContext.Provider value={storeValue}>
+                    {children}
+                </ReferenceTrackerStoreContext.Provider>
+            </ReferenceTrackerActionsContext.Provider>
+        </ReferenceTrackerEnabledContext.Provider>
     );
 }
 
-export {ReferenceTrackerActionsContext, ReferenceTrackerStoreContext, ReferenceTrackerProvider};
+export {
+    ReferenceTrackerActionsContext,
+    ReferenceTrackerEnabledContext,
+    ReferenceTrackerStoreContext,
+    ReferenceTrackerProvider,
+};

@@ -1,9 +1,15 @@
 import {useContext, useEffect, useId, useRef} from 'react';
-import {ReferenceTrackerActionsContext} from './ReferenceTrackerContext';
+import {ReferenceTrackerActionsContext, ReferenceTrackerEnabledContext} from './ReferenceTrackerContext';
 import type {RenderCache} from './types';
 import {analyzeRef, deepClone} from './utils';
 
 const DEFAULT_MAX_DEPTH = Infinity;
+
+const NOOP_TRACKER = {
+    startRender: () => {},
+    listenForChanges: (_value: unknown, _refName: string) => {},
+    endRender: () => {},
+} as const;
 
 function makeEmptyCache(): RenderCache {
     return {
@@ -20,8 +26,12 @@ function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
     const id = useId();
     const cache = useRef(makeEmptyCache());
     const {addRender} = useContext(ReferenceTrackerActionsContext);
+    const {enabled} = useContext(ReferenceTrackerEnabledContext);
 
     useEffect(() => {
+        if (!enabled) {
+            return;
+        }
         const pending = cache.current.pendingRecord;
         if (pending === null) {
             return;
@@ -33,6 +43,10 @@ function useReferenceTracker(name?: string, maxDepth = DEFAULT_MAX_DEPTH) {
         cache.current.pendingSnapshots = new Map();
         addRender(id, pending, name);
     });
+
+    if (!enabled) {
+        return NOOP_TRACKER;
+    }
 
     function startRender() {
         cache.current.currentResults = [];
