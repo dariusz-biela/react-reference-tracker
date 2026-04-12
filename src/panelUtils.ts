@@ -10,6 +10,12 @@ const TRULY_BAD = new Set<RenderClassification>([
     RENDER_CLASSIFICATION.NEW_REF_NO_VALUE,
 ]);
 
+const UNSTABLE_PREFIX = 'unstable';
+
+function isUnstableRef(ref: RefResult): boolean {
+    return ref.name.startsWith(UNSTABLE_PREFIX);
+}
+
 const HEALTH_COLOR: Record<RenderHealth, string> = {
     good: '#28a745',
     mixed: '#ffc107',
@@ -79,10 +85,11 @@ function buildRefStats(result: RefResult): string {
 }
 
 function getRenderCounts(refs: RefResult[]): RenderCounts {
+    const stable = refs.filter((r) => !isUnstableRef(r));
     return {
-        goodCount: refs.filter((r) => r.classification === RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE).length,
-        badCount: refs.filter((r) => TRULY_BAD.has(r.classification)).length,
-        noChangeCount: refs.filter((r) => r.classification === RENDER_CLASSIFICATION.NO_CHANGE).length,
+        goodCount: stable.filter((r) => r.classification === RENDER_CLASSIFICATION.NEW_REF_WITH_VALUE).length,
+        badCount: stable.filter((r) => TRULY_BAD.has(r.classification)).length,
+        noChangeCount: stable.filter((r) => r.classification === RENDER_CLASSIFICATION.NO_CHANGE).length,
     };
 }
 
@@ -141,6 +148,7 @@ function buildComponentStats(renders: RenderRecord[]): {good: number; mixed: num
 export {
     HEALTH_COLOR,
     TRULY_BAD,
+    isUnstableRef,
     getCorrectRefs,
     getRefBadgeColor,
     buildRefStats,

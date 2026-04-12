@@ -15,6 +15,7 @@ import {
     getRenderCounts,
     getRenderHealth,
     HEALTH_COLOR,
+    isUnstableRef,
 } from './panelUtils';
 import {ReferenceTrackerStoreContext} from './ReferenceTrackerContext';
 import {RENDER_CLASSIFICATION} from './types';
@@ -396,7 +397,7 @@ function RenderRecordRow({record, nameFilter}: {record: RenderRecord; nameFilter
     const healthColor = HEALTH_COLOR[health];
 
     const visibleRefs = record.refs.filter((r) => {
-        if (r.classification === RENDER_CLASSIFICATION.NO_CHANGE) {
+        if (r.classification === RENDER_CLASSIFICATION.NO_CHANGE || isUnstableRef(r)) {
             return false;
         }
         return !nameFilter || r.name.toLowerCase().includes(nameFilter.toLowerCase());
