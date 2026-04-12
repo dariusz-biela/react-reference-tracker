@@ -13,11 +13,18 @@ type RefSnapshot = {
     clone: unknown;
 };
 
+type ValueChangeDetail = {
+    path: string;
+    prev: string;
+    curr: string;
+};
+
 type RefResult = {
     name: string;
     classification: RenderClassification;
     refChangedPaths: string[];
     valueChangedPaths: string[];
+    valueChangedDetails: ValueChangeDetail[];
     unnecessaryRefChanges: string[];
 };
 
@@ -57,6 +64,7 @@ export {RENDER_CLASSIFICATION};
 export type {
     RenderClassification,
     RefSnapshot,
+    ValueChangeDetail,
     RefResult,
     RenderRecord,
     ComponentRecord,

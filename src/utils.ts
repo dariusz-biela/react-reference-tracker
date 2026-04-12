@@ -1,5 +1,5 @@
 import {RENDER_CLASSIFICATION} from './types';
-import type {RefResult, RefSnapshot, RenderClassification} from './types';
+import type {RefResult, RefSnapshot, RenderClassification, ValueChangeDetail} from './types';
 
 const MAX_LOGGED_PATHS = 100;
 
@@ -150,6 +150,17 @@ function getRefChangedPaths(
     }
 }
 
+function serializeValue(val: unknown): string {
+    if (val === undefined) return 'undefined';
+    if (val === null) return 'null';
+    if (typeof val === 'string') return val.length > 60 ? `"${val.slice(0, 57)}..."` : `"${val}"`;
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    if (Array.isArray(val)) return `Array(${val.length})`;
+    if (typeof val === 'function') return 'Function';
+    if (typeof val === 'object') return `Object(${Object.keys(val).length} keys)`;
+    return String(val);
+}
+
 function getValueChangedPaths(
     prev: unknown,
     curr: unknown,
@@ -158,6 +169,7 @@ function getValueChangedPaths(
     depth: number,
     changes: string[],
     prevRaw: unknown,
+    details: ValueChangeDetail[],
     seen?: Set<unknown>,
 ): void {
     if (changes.length >= MAX_LOGGED_PATHS || depth > maxDepth) {
@@ -182,6 +194,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 prevRaw[prevIdx],
+                details,
                 visited,
             );
         }
@@ -196,6 +209,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 prevRaw[unmatchedPrev[i]],
+                details,
                 visited,
             );
         }
@@ -209,11 +223,13 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 undefined,
+                details,
                 visited,
             );
         }
         if (prev.length !== curr.length && changes.length < MAX_LOGGED_PATHS) {
             changes.push(`${path}.length`);
+            details.push({path: `${path}.length`, prev: serializeValue(prev.length), curr: serializeValue(curr.length)});
         }
         return;
     }
@@ -231,6 +247,7 @@ function getValueChangedPaths(
                 depth + 1,
                 changes,
                 isRecord(prevRaw) ? prevRaw[key] : undefined,
+                details,
                 visited,
             );
         }
@@ -238,6 +255,9 @@ function getValueChangedPaths(
     }
     if (prev !== curr) {
         changes.push(path);
+        if (!isRecord(prev) && !isRecord(curr) && !Array.isArray(prev) && !Array.isArray(curr)) {
+            details.push({path, prev: serializeValue(prev), curr: serializeValue(curr)});
+        }
     }
 }
 
@@ -278,6 +298,7 @@ function analyzeRef(
             classification: RENDER_CLASSIFICATION.INITIAL,
             refChangedPaths: [],
             valueChangedPaths: [],
+            valueChangedDetails: [],
             unnecessaryRefChanges: [],
         };
     }
@@ -290,12 +311,13 @@ function analyzeRef(
     }
 
     const valueChangedPaths: string[] = [];
-    getValueChangedPaths(snapshot.clone, currentValue, name, maxDepth, 0, valueChangedPaths, snapshot.raw);
+    const valueChangedDetails: ValueChangeDetail[] = [];
+    getValueChangedPaths(snapshot.clone, currentValue, name, maxDepth, 0, valueChangedPaths, snapshot.raw, valueChangedDetails);
 
     const unnecessaryRefChanges = getUnnecessaryRefChanges(refChangedPaths, valueChangedPaths);
     const classification = classifyRender(refSame, valueChangedPaths, unnecessaryRefChanges);
 
-    return {name, classification, refChangedPaths, valueChangedPaths, unnecessaryRefChanges};
+    return {name, classification, refChangedPaths, valueChangedPaths, valueChangedDetails, unnecessaryRefChanges};
 }
 
 export {deepClone, analyzeRef};

@@ -1,10 +1,11 @@
 import {getCorrectRefs} from './panelUtils';
-import type {ComponentRecord, RefResult, RenderRecord, RenderTrackerStore} from './types';
+import type {ComponentRecord, RefResult, RenderRecord, RenderTrackerStore, ValueChangeDetail} from './types';
 
 type SerializedRef = {
     name: string;
     classification: string;
     valuesChanged: string[];
+    valuesChangedDetails: ValueChangeDetail[];
     correctRefChanges: string[];
     unnecessaryRefChanges: string[];
 };
@@ -32,6 +33,7 @@ function serializeRef(ref: RefResult): SerializedRef {
         name: ref.name,
         classification: ref.classification,
         valuesChanged: ref.valueChangedPaths,
+        valuesChangedDetails: ref.valueChangedDetails,
         correctRefChanges: getCorrectRefs(ref),
         unnecessaryRefChanges: ref.unnecessaryRefChanges,
     };
