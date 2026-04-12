@@ -22,6 +22,23 @@ import {RENDER_CLASSIFICATION} from './types';
 import type {RefResult, RenderRecord} from './types';
 
 const CSS_PREFIX = 'rrt';
+const LS_PREFIX = 'rrt:';
+
+function readLS(key: string): string | null {
+    try {
+        return localStorage.getItem(`${LS_PREFIX}${key}`);
+    } catch {
+        return null;
+    }
+}
+
+function writeLS(key: string, value: string) {
+    try {
+        localStorage.setItem(`${LS_PREFIX}${key}`, value);
+    } catch {
+        // storage full or blocked — ignore
+    }
+}
 
 const PANEL_STYLES = `
 .${CSS_PREFIX}-root {
@@ -574,10 +591,10 @@ function ReferenceTrackerPanel() {
 
     const {store, clearAll} = useContext(ReferenceTrackerStoreContext);
     const {enabled, setEnabled} = useContext(ReferenceTrackerEnabledContext);
-    const [open, setOpen] = useState(false);
-    const [idFilter, setIdFilter] = useState('');
-    const [nameFilter, setNameFilter] = useState('');
-    const [showDetails, setShowDetails] = useState(false);
+    const [open, setOpen] = useState(() => readLS('open') === 'true');
+    const [idFilter, setIdFilter] = useState(() => readLS('idFilter') ?? '');
+    const [nameFilter, setNameFilter] = useState(() => readLS('nameFilter') ?? '');
+    const [showDetails, setShowDetails] = useState(() => readLS('showDetails') === 'true');
 
     const allIds = Object.keys(store.components);
     const filteredIds = idFilter ? allIds.filter((id) => id.toLowerCase().includes(idFilter.toLowerCase())) : allIds;
@@ -608,7 +625,14 @@ function ReferenceTrackerPanel() {
                     </div>
                     <div className={`${CSS_PREFIX}-filters`}>
                         <label className={`${CSS_PREFIX}-checkbox-label`}>
-                            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+                            <input
+                                type="checkbox"
+                                checked={enabled}
+                                onChange={(e) => {
+                                    setEnabled(e.target.checked);
+                                    writeLS('enabled', String(e.target.checked));
+                                }}
+                            />
                             Tracking enabled
                         </label>
                         <input
@@ -616,20 +640,29 @@ function ReferenceTrackerPanel() {
                             className={`${CSS_PREFIX}-filter-input`}
                             placeholder="Filter by component id\u2026"
                             value={idFilter}
-                            onChange={(e) => setIdFilter(e.target.value)}
+                            onChange={(e) => {
+                                setIdFilter(e.target.value);
+                                writeLS('idFilter', e.target.value);
+                            }}
                         />
                         <input
                             aria-label="Filter by ref name"
                             className={`${CSS_PREFIX}-filter-input`}
                             placeholder="Filter by ref name\u2026"
                             value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
+                            onChange={(e) => {
+                                setNameFilter(e.target.value);
+                                writeLS('nameFilter', e.target.value);
+                            }}
                         />
                         <label className={`${CSS_PREFIX}-checkbox-label`}>
                             <input
                                 type="checkbox"
                                 checked={showDetails}
-                                onChange={(e) => setShowDetails(e.target.checked)}
+                                onChange={(e) => {
+                                    setShowDetails(e.target.checked);
+                                    writeLS('showDetails', String(e.target.checked));
+                                }}
                             />
                             Show value details
                         </label>
@@ -652,7 +685,12 @@ function ReferenceTrackerPanel() {
             <button
                 aria-label="Toggle reference tracker panel"
                 className={`${CSS_PREFIX}-fab ${open ? `${CSS_PREFIX}-fab--active` : ''}`}
-                onClick={() => setOpen((v) => !v)}
+                onClick={() =>
+                    setOpen((v) => {
+                        writeLS('open', String(!v));
+                        return !v;
+                    })
+                }
                 type="button"
             >
                 {open ? '\u2715' : 'RT'}

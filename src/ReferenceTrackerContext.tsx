@@ -30,7 +30,17 @@ function ReferenceTrackerProvider({
     children: React.ReactNode;
     enabled?: boolean;
 }) {
-    const [enabled, setEnabled] = useState(enabledProp);
+    const [enabled, setEnabled] = useState(() => {
+        try {
+            const stored = localStorage.getItem('rrt:enabled');
+            if (stored !== null) {
+                return stored === 'true';
+            }
+        } catch {
+            // localStorage unavailable — ignore
+        }
+        return enabledProp;
+    });
     const [store, setStore] = useState(EMPTY_STORE);
 
     const addRender = useCallback((componentId: string, record: RenderRecord, componentName?: string) => {

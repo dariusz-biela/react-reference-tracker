@@ -59,6 +59,7 @@ function AddDataButton({
 let clipboardWriteText: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+    localStorage.clear();
     clipboardWriteText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
         value: {writeText: clipboardWriteText},
