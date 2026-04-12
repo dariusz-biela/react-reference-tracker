@@ -1,4 +1,5 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {serializeStore} from './clipboardUtils';
 import type {ComponentRecord, RenderRecord, RenderTrackerContextValue, RenderTrackerStore} from './types';
 
 const EMPTY_STORE: RenderTrackerStore = {components: {}};
@@ -15,7 +16,7 @@ const ReferenceTrackerStoreContext = React.createContext<StoreContextValue>({
     clearAll: () => undefined,
 });
 
-function ReferenceTrackerProvider({children}: {children: React.ReactNode}) {
+function ReferenceTrackerProvider({children}: {children: React.ReactNode; isOnSearch?: boolean}) {
     const [store, setStore] = useState(EMPTY_STORE);
 
     const addRender = useCallback((componentId: string, record: RenderRecord, componentName?: string) => {
@@ -35,6 +36,12 @@ function ReferenceTrackerProvider({children}: {children: React.ReactNode}) {
     }, []);
 
     const clearAll = useCallback(() => setStore(EMPTY_STORE), []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            (window as unknown as Record<string, unknown>).__REFERENCE_TRACKER_DATA__ = serializeStore(store);
+        }
+    }, [store]);
 
     const actionsValue = useMemo(() => ({addRender}), [addRender]);
     const storeValue = useMemo(() => ({store, clearAll}), [store, clearAll]);
